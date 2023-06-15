@@ -1,0 +1,82 @@
+##Codigo para copiar los datos sin todas las filas
+import openpyxl
+import random
+
+# Ruta del archivo Excel original
+archivo_original = r"C:\Users\Usuario\Desktop\PRUEBA DE HORARIOS\XD.xlsx"
+
+# Ruta del archivo Excel donde se guardarán los grupos
+archivo_grupos = r"C:\Users\Usuario\Desktop\PRUEBA DE HORARIOS\Grupos.xlsx"
+
+# Nombre de la hoja del archivo original donde se encuentran las materias
+hoja_origen = "Sheet"
+
+# Número de la columna donde se encuentran las materias (comenzando desde 1)
+columna_materias = 3
+
+Primer_Sem = ["RESPONSABILIDAD SOCIAL Y DESARROLLO SUSTENTABLE", "CULTURA DE PAZ", "ÁLGEBRA", "CÁLCULO DIFERENCIAL", "METODOLOGÍA DE LA PROGRAMACIÓN"]
+
+etiqueta_grupo = "Primer semestre"
+
+# Cargar el archivo Excel original
+wb_original = openpyxl.load_workbook(archivo_original)
+
+# Obtener la hoja de origen
+hoja = wb_original[hoja_origen]
+
+# Obtener todas las materias, excluyendo los valores nulos o vacíos
+materias = []
+for fila in hoja.iter_rows(min_row=2, values_only=True):
+    materia = fila[columna_materias - 1]
+    if materia is not None and materia in Primer_Sem:
+        materias.append(materia)
+
+# Crear grupos de 5 materias distintas sin repetir la misma materia
+grupos = []
+while len(materias) >= 5:
+    grupo_existente = set(random.sample(materias, 5))
+    for materia in grupo_existente:
+        materias.remove(materia)
+    grupo_con_etiqueta = [etiqueta_grupo] + list(grupo_existente)
+    grupos.append(grupo_con_etiqueta)
+
+# Si quedan menos de 5 materias sin grupo, se crea un grupo adicional
+if len(materias) > 0:
+    grupo_existente = set(random.sample(materias, len(materias)))
+    grupo_con_etiqueta = [etiqueta_grupo] + list(grupo_existente)
+    grupos.append(grupo_con_etiqueta)
+
+# Si no hay un grupo de "Cultura de Paz", se crea uno con las materias restantes
+cultura_de_paz = [grupo for grupo in grupos if grupo[1] == "CULTURA DE PAZ"]
+if not cultura_de_paz:
+    grupo_cultura_de_paz = [etiqueta_grupo] + ["CULTURA DE PAZ"] + list(set(materias))
+    grupos.append(grupo_cultura_de_paz)
+
+# Crear un nuevo archivo Excel para guardar los grupos
+wb_grupos = openpyxl.Workbook()
+hoja_grupos = wb_grupos.active
+
+# Agregar encabezados
+datos_columna = ['ESTATUS', 'CVE. MAT.', 'MATERIA', 'Frec. Mat.', 'NIVEL DE GRUPO', 'MODALIDAD', 'PLAN', 'NO. EMPLEADO',
+                 'MAESTRO', 'HORARIO', 'FREC', 'GPO', 'AULA']
+
+for i, dato in enumerate(datos_columna, start=1):
+    celda = hoja_grupos.cell(row=2, column=i)
+    celda.value = dato
+
+# Contador de fila
+fila_grupos = 6
+
+# Escribir los grupos en el archivo
+for grupo in grupos:
+    fila_grupos += 1
+
+    for materia in grupo:
+        celda = hoja_grupos.cell(row=fila_grupos, column=1)
+        celda.value = materia
+        fila_grupos += 1
+
+# Guardar el archivo con los grupos
+wb_grupos.save(archivo_grupos)
+
+print("Se han creado los grupos y se ha guardado en un nuevo archivo Excel.")
